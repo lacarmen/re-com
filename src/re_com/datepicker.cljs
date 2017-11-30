@@ -240,15 +240,19 @@
 
 (defn- anchor-button
   "Provide clickable field with current date label and dropdown button e.g. [ 2014 Sep 17 | # ]"
-  [shown? model format placeholder]
+  [shown? model format placeholder disabled?]
   [:div {:class    "rc-datepicker-dropdown-anchor input-group display-flex noselect"
-         :style    (flex-child-style "none")
+         :style    (merge
+                     (flex-child-style "none")
+                     (if (deref-or-value disabled?) {:pointer-events "none"}))
          :on-click (handler-fn (swap! shown? not))}
    [h-box
     :align     :center
     :class     "noselect"
     :min-width "10em"
-    :children  [[:label {:class "form-control dropdown-button"}
+    :children  [[:label
+                 {:class "form-control dropdown-button"
+                  :style (if (deref-or-value disabled?) {:background-color "#eee"})}
                  (if (instance? js/goog.date.Date (deref-or-value model))
                    (unparse (if (seq format) (formatter format) date-format) (deref-or-value model))
                    [:span {:style {:color "#999999"}} placeholder])]
@@ -269,7 +273,7 @@
         cancel-popover #(reset! shown? false)
         position       :below-left]
     (fn
-      [& {:keys [model show-weeks? on-change format no-clip? placeholder]
+      [& {:keys [model show-weeks? on-change format no-clip? placeholder disabled?]
           :or {no-clip? true}
           :as passthrough-args}]
       (let [collapse-on-select (fn [new-model]
@@ -284,7 +288,7 @@
          :class    "rc-datepicker-dropdown-wrapper"
          :showing? shown?
          :position position
-         :anchor   [anchor-button shown? model format placeholder]
+         :anchor   [anchor-button shown? model format placeholder disabled?]
          :popover  [popover-content-wrapper
                     :position-offset (if show-weeks? 43 44)
                     :no-clip?       no-clip?
