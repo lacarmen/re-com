@@ -83,7 +83,7 @@
 
 (defn- show-variant
   [variation]
-  (let [model1          (reagent/atom (now))
+  (let [model1          (reagent/atom nil)
         model2          (reagent/atom (plus  (now) (days 120)))
         disabled?       (reagent/atom false)
         show-today?     (reagent/atom true)
@@ -93,75 +93,24 @@
         selectable-pred (fn [date] (@as-days (day-of-week date))) ; Simply allow selection based on day of week.
         label-style     {:font-style "italic" :font-size "smaller" :color "#777"}]
     (case variation
-      :inline [(fn inline-fn
-                 []
-                 [parameters-with
-                  [h-box
-                   :gap      "20px"
-                   :align    :start
-                   :children [[v-box
-                               :gap      "5px"
-                               :children [[label
-                                           :style label-style
-                                           :label [:span " :maximum " (date->string @model2) [:br] ":start-of-week Sunday"]]
-                                          [datepicker
-                                           :model         model1
-                                           :maximum       model2
-                                           :disabled?     disabled?
-                                           :show-today?   @show-today?
-                                           :show-weeks?   @show-weeks?
-                                           :selectable-fn selectable-pred
-                                           :on-change     #(reset! model1 %)]
-                                          [label :style label-style :label (str "selected: " (date->string @model1))]
-                                          [h-box
-                                           :gap      "6px"
-                                           :margin   "10px 0px 0px 0px"
-                                           :children [[label :style label-style :label "Change model:"]
-                                                      [md-icon-button
-                                                       :md-icon-name "zmdi-arrow-left"
-                                                       :size         :smaller
-                                                       :on-click     #(reset! model1 (minus @model1 (days 1)))]
-                                                      [md-icon-button
-                                                       :md-icon-name "zmdi-arrow-right"
-                                                       :size         :smaller
-                                                       :disabled?    (not (before? (to-local-date @model1)
-                                                                                   (to-local-date @model2)))
-                                                       :on-click     #(reset! model1 (plus @model1 (days 1)))]]]]]
-
-                              [v-box
-                               :gap      "5px"
-                               :children [[label
-                                           :style label-style
-                                           :label [:span ":minimum " (date->string @model1) [:br] ":start-of-week Monday"]]
-                                          [datepicker
-                                           :start-of-week 0
-                                           :model         model2
-                                           :minimum       model1
-                                           :show-today?   @show-today?
-                                           :show-weeks?   @show-weeks?
-                                           :selectable-fn selectable-pred
-                                           :disabled?     disabled?
-                                           :on-change     #(reset! model2 %)]
-                                          [label :style label-style :label (str "selected: " (date->string @model2))]]]]]
-                  enabled-days
-                  disabled?
-                  show-today?
-                  show-weeks?])]
+      :inline [:foo]
       :dropdown [(fn dropdown-fn
                    []
                    [parameters-with
                     [h-box
                      :size     "auto"
                      :align    :start
-                     :children [[gap :size "120px"]
+                     :children [
                                 [datepicker-dropdown
                                  :model         model1
                                  :show-today?   @show-today?
                                  :show-weeks?   @show-weeks?
                                  :selectable-fn selectable-pred
-                                 :format        "dd MMM, yyyy"
+                                 :format        "EEE, MMMM do, yyyy"
+                                 :placeholder   "Select a Date"
                                  :disabled?     disabled?
-                                 :on-change     #(reset! model1 %)]]]
+                                 :on-change     #(reset! model1 %)
+                                 :clear-button? true]]]
                     enabled-days
                     disabled?
                     show-today?
@@ -175,7 +124,7 @@
 
 (defn datepicker-examples
   []
-  (let [selected-variation (reagent/atom :inline)]
+  (let [selected-variation (reagent/atom :dropdown)]
     (fn examples-fn []
       [v-box
        :size     "auto"

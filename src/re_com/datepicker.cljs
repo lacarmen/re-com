@@ -240,31 +240,39 @@
 
 (defn- anchor-button
   "Provide clickable field with current date label and dropdown button e.g. [ 2014 Sep 17 | # ]"
-  [shown? model format placeholder disabled?]
-  [:div {:class    "rc-datepicker-dropdown-anchor input-group display-flex noselect"
-         :style    (merge
-                     (flex-child-style "none")
-                     (if (deref-or-value disabled?) {:pointer-events "none"}))
-         :on-click (handler-fn (swap! shown? not))}
-   [h-box
-    :align     :center
-    :class     "noselect"
-    :min-width "10em"
-    :children  [[:label
-                 {:class "form-control dropdown-button"
-                  :style (if (deref-or-value disabled?) {:background-color "#eee"})}
-                 (if (instance? js/goog.date.Date (deref-or-value model))
-                   (unparse (if (seq format) (formatter format) date-format) (deref-or-value model))
-                   [:span {:style {:color "#999999"}} placeholder])]
-                [:span.dropdown-button.activator.input-group-addon
-                 {:style {:padding "3px 0px 0px 0px"}}
-                 [:i.zmdi.zmdi-apps {:style {:font-size "24px"}}]]]]])
+  [shown? {:keys [model format placeholder disabled? clear-button? on-change]}]
+  (let [toggle-fn (handler-fn (swap! shown? not))]
+    [:div {:class    "rc-datepicker-dropdown-anchor input-group display-flex noselect"
+           :style    (merge
+                       (flex-child-style "none")
+                       (if (deref-or-value disabled?) {:pointer-events "none"}))}
+     [h-box
+      :align     :center
+      :class     "noselect"
+      :min-width "10em"
+      :children  [[:label
+                   {:class "form-control dropdown-button"
+                    :style (if (deref-or-value disabled?) {:background-color "#eee"})
+                    :on-click toggle-fn}
+                   (if (instance? js/goog.date.Date (deref-or-value model))
+                     (unparse (if (seq format) (formatter format) date-format) (deref-or-value model))
+                     [:span {:style {:color "#999999"}} placeholder])]
+                  (if clear-button?
+                    [:button.btn.btn-default.dropdown-button.input-group-addon
+                     {:style    {:width "34px"}
+                      :on-click #(on-change nil)}
+                     [:i.zmdi.zmdi-close]]
+                    [:span.dropdown-button.activator.input-group-addon
+                     {:style    {:padding "3px 0px 0px 0px"}
+                      :on-click toggle-fn}
+                     [:i.zmdi.zmdi-apps {:style {:font-size "24px"}}]])]]]))
 
 (def datepicker-dropdown-args-desc
   (conj datepicker-args-desc
-        {:name :format       :required false  :default "yyyy MMM dd"  :type "string"   :description "[datepicker-dropdown only] a represenatation of a date format. See cljs_time.format"}
-        {:name :no-clip?     :required false  :default true           :type "boolean"  :description "[datepicker-dropdown only] when an anchor is in a scrolling region (e.g. scroller component), the popover can sometimes be clipped. When this parameter is true (which is the default), re-com will use a different CSS method to show the popover. This method is slightly inferior because the popover can't track the anchor if it is repositioned"}
-        {:name :placeholder  :required false                          :type "string"   :description "[datepicker-dropdown only] placeholder text for when a date is not selected."}))
+        {:name :format         :required false  :default "yyyy MMM dd"  :type "string"   :description "[datepicker-dropdown only] a represenatation of a date format. See cljs_time.format"}
+        {:name :no-clip?       :required false  :default true           :type "boolean"  :description "[datepicker-dropdown only] when an anchor is in a scrolling region (e.g. scroller component), the popover can sometimes be clipped. When this parameter is true (which is the default), re-com will use a different CSS method to show the popover. This method is slightly inferior because the popover can't track the anchor if it is repositioned"}
+        {:name :placeholder    :required false                          :type "string"   :description "[datepicker-dropdown only] placeholder text for when a date is not selected."}
+        {:name :clear-button?  :required false  :default false          :type "boolean"  :description "[datepicker-dropdown only] when this parameter is true, the zmdi-apps icon is replaced with a button to clear the date"}))
 
 (defn datepicker-dropdown
   [& {:as args}]
@@ -273,22 +281,22 @@
         cancel-popover #(reset! shown? false)
         position       :below-left]
     (fn
-      [& {:keys [model show-weeks? on-change format no-clip? placeholder disabled?]
+      [& {:keys [model show-weeks? on-change no-clip?]
           :or {no-clip? true}
           :as passthrough-args}]
       (let [collapse-on-select (fn [new-model]
                                  (reset! shown? false)
-                                 (when on-change (on-change new-model)))                 ;; wrap callback to collapse popover
-            passthrough-args   (dissoc passthrough-args :format :no-clip? :placeholder)  ;; :format, :no-clip? and :placeholder only valid at this API level
+                                 (when on-change (on-change new-model))) ;; wrap callback to collapse popover
+            passthrough-args   (dissoc passthrough-args :format :no-clip? :placeholder :clear-button?)
             passthrough-args   (->> (assoc passthrough-args :on-change collapse-on-select)
-                                    (merge {:hide-border? true})                         ;; apply defaults
+                                    (merge {:hide-border? true}) ;; apply defaults
                                     vec
                                     flatten)]
         [popover-anchor-wrapper
          :class    "rc-datepicker-dropdown-wrapper"
          :showing? shown?
          :position position
-         :anchor   [anchor-button shown? model format placeholder disabled?]
+         :anchor   [anchor-button shown? args]
          :popover  [popover-content-wrapper
                     :position-offset (if show-weeks? 43 44)
                     :no-clip?       no-clip?
